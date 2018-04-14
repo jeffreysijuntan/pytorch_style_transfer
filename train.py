@@ -51,20 +51,22 @@ def train(args):
 	optimizer = optim.Adam(transnet.parameters(), lr=args.lr)
 	mse_loss = nn.MSELoss()
 
-	if use_cuda:
-		vgg16 = vgg16.cuda()
-		transnet = transnet.cuda()
-
 	style_target = Image.open(args.style_fname)
 	style_target = transform(style_target)
 	style_target = style_target.unsqueeze(0)
 	style_target = Variable(style_target)
+
+	if use_cuda:
+		vgg16 = vgg16.cuda()
+		transnet = transnet.cuda()
+		style_target = style_target.cuda()
 
 	features_style_target = vgg16(style_target)
 	gram_style_target = [gram_matrix(feature) for feature in features_style_target]
 
 
 	for epoch in range(args.epoch):
+		print('Epoch {}'.format(epoch+1))
 		running_style_loss = 0.0
 		running_content_loss = 0.0
 
@@ -73,6 +75,9 @@ def train(args):
 			content_target, _ = data
 
 			content_target = Variable(content_target)
+			if use_cuda:
+				content_target = content_target.cuda()			
+
 			y = transnet(content_target)
 
 			features_y = vgg16(y)
@@ -92,9 +97,12 @@ def train(args):
 
 			running_content_loss += content_loss.data[0]
 			running_style_loss += style_loss.data[0]
-
-			if i % 500 == 499:
-				print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 500))
+			
+			if i % 100 == 99:
+				running_loss = content_loss + style_loss
+				print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 100))
+				print('[%d, %5d] conten loss: %.3f' % (epoch + 1, i + 1, running_content_loss / 100))
+				print('[%d, %5d] style loss: %.3f' % (epoch + 1, i + 1, running_style_loss / 100))
 				running_content_loss = 0.0
 				running_style_loss = 0.0
 

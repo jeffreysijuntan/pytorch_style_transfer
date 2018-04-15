@@ -23,7 +23,9 @@ def main():
 	train_parser.add_argument('--epoch', type=int, default=2)
 	train_parser.add_argument('--lr', type=float, default=1e-3)
 	train_parser.add_argument('--batch_size', type=int, default=4)
-
+	train_parser.add_argument('--ckpt_dir', type=str, default='./checkpoint')
+	train_parser.add_argument('--content_weight', type=int, default=1e10)
+	train_parser.add_argument('--style_weight', type=int, default=1e10)
 	args = parser.parse_args()
 
 	if args.subcommand == 'train':
@@ -83,12 +85,12 @@ def train(args):
 			features_y = vgg16(y)
 			features_content_target = vgg16(content_target)
 
-			content_loss = mse_loss(features_y.relu3_3, features_content_target.relu3_3)
+			content_loss = args.content_weight * mse_loss(features_y.relu3_3, features_content_target.relu3_3)
 			N,C,H,W = features_y.relu3_3.size()
-			content_loss /= C*H*W
+			#content_loss /= C*H*W
 
 			gram_y = [gram_matrix(feature) for feature in features_y]
-			style_loss = np.sum([mse_loss(i, j) for i, j in zip(gram_y, gram_style_target)])
+			style_loss = args.style_weight * np.sum([mse_loss(i, j) for i, j in zip(gram_y, gram_style_target)])
 
 			optimizer.zero_grad()
 			loss = content_loss + style_loss
@@ -99,12 +101,16 @@ def train(args):
 			running_style_loss += style_loss.data[0]
 			
 			if i % 100 == 99:
-				running_loss = content_loss + style_loss
+				running_loss = running_content_loss + running_style_loss
 				print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 100))
-				print('[%d, %5d] conten loss: %.3f' % (epoch + 1, i + 1, running_content_loss / 100))
+				print('[%d, %5d] content loss: %.3f' % (epoch + 1, i + 1, running_content_loss / 100))
 				print('[%d, %5d] style loss: %.3f' % (epoch + 1, i + 1, running_style_loss / 100))
 				running_content_loss = 0.0
 				running_style_loss = 0.0
+
+		ckpt_fname = "epoch_" + str(epoch+1) + "_" + str(time.ctime()).replace(' ', '_')  + ".model"
+		ckpt_path = os.path.join(args.ckpt_dir, ckpt_fname)
+		torch.save(transnet.state_dict(), ckpt_path)
 
 def gram_matrix(input):
 	N, C, H, W = input.size()

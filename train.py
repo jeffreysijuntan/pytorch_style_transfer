@@ -30,8 +30,14 @@ def main():
 	train_parser.add_argument('--style_weight', type=int, default=1e10)
 	args = parser.parse_args()
 
+	test_parser = sub_parsers.add_parser('test')
+	test_parser.add_argument('content_fpath', type=str, required=True)
+	test_parser.add_argument('ckpt_fpath', type=str, required=True)
+
 	if args.subcommand == 'train':
 		train(args)
+	if args.subcommand == 'test':
+		test(args)
 
 def train(args):
 	use_cuda = torch.cuda.is_available()
@@ -113,6 +119,25 @@ def train(args):
 		ckpt_fname = "epoch_" + str(epoch+1) + "_" + str(time.ctime()).replace(' ', '_')  + ".model"
 		ckpt_path = os.path.join(args.ckpt_dir, ckpt_fname)
 		torch.save(transnet.state_dict(), ckpt_path)
+
+def test(args):
+	use_cuda = torch.cuda.is_available()
+	dtype = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+
+	content_image = Image.open(args.content_fpath)
+	content_image = transform(content_image)
+	content_image = content_image.unsqueeze(0)
+	content_image = Varaible(content_image)
+
+	transnet = Transformation_Network()
+	transnet.load_state_dict(torch.load(args.ckpt_fpath))
+
+	if use_cuda:
+		content_image = content_image.cuda()
+		transnet = transnet.cuda()
+
+	out = transnet(content_image)
+	out_image = out * 122.5 + 122.5
 
 def gram_matrix(input):
 	N, C, H, W = input.size()

@@ -26,7 +26,7 @@ def main():
 	train_parser.add_argument('--lr', type=float, default=1e-3)
 	train_parser.add_argument('--batch_size', type=int, default=4)
 	train_parser.add_argument('--ckpt_dir', type=str, default='./checkpoint')
-	train_parser.add_argument('--content_weight', type=int, default=1e10)
+	train_parser.add_argument('--content_weight', type=int, default=1e5)
 	train_parser.add_argument('--style_weight', type=int, default=1e10)
 	args = parser.parse_args()
 

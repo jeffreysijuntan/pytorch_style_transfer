@@ -8,6 +8,8 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 from PIL import Image
+from scipy.misc import imsave
+from matplotlib import pyplot as plt
 from torch.autograd import Variable
 from torchvision import transforms, models, datasets
 from torch.utils.data import DataLoader
@@ -28,11 +30,14 @@ def main():
 	train_parser.add_argument('--ckpt_dir', type=str, default='./checkpoint')
 	train_parser.add_argument('--content_weight', type=int, default=1e5)
 	train_parser.add_argument('--style_weight', type=int, default=1e10)
-	args = parser.parse_args()
+	
 
 	test_parser = sub_parsers.add_parser('test')
-	test_parser.add_argument('content_fpath', type=str, required=True)
-	test_parser.add_argument('ckpt_fpath', type=str, required=True)
+	test_parser.add_argument('--content_fpath', type=str, required=True)
+	test_parser.add_argument('--ckpt_fpath', type=str, required=True)
+
+	args = parser.parse_args()
+
 
 	if args.subcommand == 'train':
 		train(args)
@@ -123,21 +128,39 @@ def train(args):
 def test(args):
 	use_cuda = torch.cuda.is_available()
 	dtype = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+	
+	normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+
+	transform = transforms.Compose([
+		transforms.Resize(size=(256,256)),
+		transforms.ToTensor(),
+		normalize
+		])
 
 	content_image = Image.open(args.content_fpath)
 	content_image = transform(content_image)
 	content_image = content_image.unsqueeze(0)
-	content_image = Varaible(content_image)
+	content_image = Variable(content_image)
 
 	transnet = Transformation_Network()
-	transnet.load_state_dict(torch.load(args.ckpt_fpath))
 
 	if use_cuda:
 		content_image = content_image.cuda()
 		transnet = transnet.cuda()
+		transnet.load_state_dict(torch.load(args.ckpt_fpath))
+
+	transnet.load_state_dict(torch.load(args.ckpt_fpath, map_location='cpu'))
 
 	out = transnet(content_image)
 	out_image = out * 122.5 + 122.5
+	out_image = out_image.data.numpy().squeeze(0).transpose(1,2,0)
+
+	plt.imshow(out_image)
+	plt.show()
+
+	imsave('./rotunda_style.jpg', out_image)
+
 
 def gram_matrix(input):
 	N, C, H, W = input.size()

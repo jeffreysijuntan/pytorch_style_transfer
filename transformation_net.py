@@ -28,9 +28,9 @@ class Transformation_Network(nn.Module):
 		self.conv2 = nn.Conv2d(32,64,3,2, padding=1)
 		self.conv3 = nn.Conv2d(64,128,3,2, padding=1)
 
-		self.in1 = nn.InstanceNorm2d(32)
-		self.in2 = nn.InstanceNorm2d(64)
-		self.in3 = nn.InstanceNorm2d(128)
+		self.in1 = nn.InstanceNorm2d(32, affine=True)
+		self.in2 = nn.InstanceNorm2d(64, affine=True)
+		self.in3 = nn.InstanceNorm2d(128, affine=True)
 
 		self.res1 = ResidualBlock(128)
 		self.res2 = ResidualBlock(128)
@@ -54,7 +54,7 @@ class Transformation_Network(nn.Module):
 		out_conv1 = self.relu(self.in1(self.conv1(padded_x)))
 		out_conv2 = self.relu(self.in2(self.conv2(out_conv1)))
 		out_conv3 = self.relu(self.in3(self.conv3(out_conv2)))
-
+        
 		out_res = self.res1(out_conv3)
 		out_res = self.res2(out_res)
 		out_res = self.res3(out_res)
@@ -83,7 +83,5 @@ class ResidualBlock(nn.Module):
 		out = self.relu(self.IN(self.conv(x)))
 		out = self.IN(self.conv(out)) + self.center_crop(x)
 		return out
-
-
 
 

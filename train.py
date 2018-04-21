@@ -44,6 +44,20 @@ def main():
 	if args.subcommand == 'test':
 		test(args)
 
+def deprocess(img):
+    transform = transforms.Compose([
+    	transforms.Normalize(mean=[0, 0, 0], std=[1.0 / [s for s in (0.229, 0.224, 0.225)]]),
+    	transforms.Normalize(mean=[-0.485, -0.456, -0.406], std=[1, 1, 1]),
+    	transforms.Lambda(rescale),
+    	transforms.ToPILImage(),
+    	])
+    return transform(img)
+
+def rescale(x):
+	low, high = x.min(), x.max()
+	x_rescaled = (x - low) / (high - low)
+	return x_rescaled
+
 def train(args):
 	use_cuda = torch.cuda.is_available()
 	dtype = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
@@ -153,7 +167,7 @@ def test(args):
 	transnet.load_state_dict(torch.load(args.ckpt_fpath, map_location='cpu'))
 
 	out = transnet(content_image)
-	out_image = out * 122.5 + 122.5
+	out_image = deprocess(out)
 	out_image = out_image.data.numpy().squeeze(0).transpose(1,2,0)
 
 	plt.imshow(out_image)

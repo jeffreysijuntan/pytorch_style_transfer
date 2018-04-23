@@ -126,7 +126,6 @@ def train(args):
                 running_content_loss = 0.0
                 running_style_loss = 0.0
                 
-
                 if i % 1000 == 0:
 	                content_image = Image.open(content_fpath)
 	                content_image = transform(content_image)

@@ -118,7 +118,7 @@ def train(args):
             running_content_loss += content_loss.data[0]
             running_style_loss += style_loss.data[0]
             
-            if i % 100 == 99:
+            if i % 100 == 0:
                 running_loss = running_content_loss + running_style_loss
                 print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 100))
                 print('[%d, %5d] content loss: %.3f' % (epoch + 1, i + 1, running_content_loss / 100))
@@ -139,10 +139,11 @@ def train(args):
 	                img_fname = 'epoch_' + str(epoch+1) + '_' + 'iter_' + str(i) + str(time.ctime()).replace(' ', '_') + '.jpg' 
 	                img_fpath = os.path.join(args.img_dir, img_fname)
 	                out_image.save(img_fpath)
-	                      
-        ckpt_fname = "epoch_" + str(epoch+1) + "_" + str(time.ctime()).replace(' ', '_')  + ".model"
-        ckpt_path = os.path.join(args.ckpt_dir, ckpt_fname)
-        torch.save(transnet.state_dict(), ckpt_path)
+	        
+            if i % 2000 == 0:              
+                ckpt_fname = "epoch_" + str(epoch+1) + "_" + 'iter_' + str(i) + '_' + str(time.ctime()).replace(' ', '_')  + ".model"
+                ckpt_path = os.path.join(args.ckpt_dir, ckpt_fname)
+                torch.save(transnet.state_dict(), ckpt_path)
 
 def test(args):
 	use_cuda = torch.cuda.is_available()
